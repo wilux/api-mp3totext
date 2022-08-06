@@ -1,5 +1,6 @@
 package ru.bmstu.vosk;
 
+import org.apache.commons.io.FileUtils;
 import org.vosk.LibVosk;
 import org.vosk.LogLevel;
 import org.vosk.Model;
@@ -12,7 +13,7 @@ import java.io.*;
 public class BigModel {
     private String result = null;
 
-    BigModel (InputStream stream) {
+    BigModel (InputStream stream) throws IOException, UnsupportedAudioFileException {
         convertWavFile(stream);
     }
 
@@ -20,31 +21,33 @@ public class BigModel {
         return result;
     }
 
-    private void convertWavFile(InputStream stream) {
+    private void convertWavFile(InputStream stream) throws IOException, UnsupportedAudioFileException {
         LibVosk.setLogLevel(LogLevel.DEBUG);
-        try (
-                // Создадим модель для распознавания
-                // "model" - директория, где находится модель
-                Model model = new Model("model");
-                // Преобразуем файл в нужный формат
-                InputStream ais = AudioSystem.getAudioInputStream(stream);
-                // Создадим обект распознавателя
-                Recognizer recognizer = new Recognizer(model, 8000)
-        ) {
+
+
+            File targetFile = new File("audio/demo.mp3");
+
+            FileUtils.copyInputStreamToFile(stream, targetFile);
+
+        Mp3ToWav mp3ToWav = new Mp3ToWav();
+        String file = "audio/demo.mp3";
+        mp3ToWav.convert(file);
+
+        try (Model model = new Model("model/small-en-us");
+             InputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream("audio/demo.wav")));
+             Recognizer recognizer = new Recognizer(model, 44050)) {
 
             int nbytes;
             byte[] b = new byte[4096];
             while ((nbytes = ais.read(b)) >= 0) {
-                recognizer.acceptWaveForm(b, nbytes);
+                if (recognizer.acceptWaveForm(b, nbytes)) {
+                    // System.out.println(recognizer.getResult());
+                } else {
+                    // System.out.println(recognizer.getPartialResult());
+                }
             }
+
             result = recognizer.getFinalResult();
-            System.out.println(result);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (UnsupportedAudioFileException e) {
-            e.printStackTrace();
         }
     }
 }

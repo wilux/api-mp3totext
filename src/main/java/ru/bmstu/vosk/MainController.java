@@ -5,20 +5,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.*;
 
 @RestController
 public class MainController {
-    /**
-     * Разпознавание текста из аудиофайла на русском языке
-     * @param file аудиофайл
-     *             ВАЖНО: Файл должен быть 8khz, mono, 16 бит
-     * @return Распознанная строка
-     * @throws IOException
-     */
+
     @PostMapping("/getText")
-    public String getText(@RequestParam("file") MultipartFile file) throws IOException {
-        // Важно обернуть именно в BufferedInputStream, иначе при распозновании будут ошибки
+    public String getText(@RequestParam("file") MultipartFile file) throws IOException, UnsupportedAudioFileException {
         BigModel model = new BigModel(new BufferedInputStream(file.getInputStream()));
         return model.getResult();
     }
